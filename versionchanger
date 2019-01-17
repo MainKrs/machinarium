@@ -1,0 +1,133 @@
+#!/bin/bash
+
+TERRAFORM_VERSION=0.11.11
+PACKER_VERSION=1.3.3
+KOPS_VERSION=1.11.0
+KUBECTL_VERSION=1.13.2
+TERRAGRUNT_VERSION=0.17.4
+DEBIAN_FRONTEND=noninteractive
+
+
+
+function prepare_tools() {
+  printf "Preparing tools... "
+  sudo apt-get -qq update && sudo apt-get install -qq unzip wget
+  if [ $? -gt 0  ]
+    then
+      printf "Failed. Do you have Internet?\n"
+      return 1
+    else
+      printf "Done.\n"
+  fi
+  sudo rm -f /tmp/temp.zip
+}
+
+function check_terraform_version() {
+  CURRENT_TF=$(terraform version |grep '^Terraform')   # hack to omit terraform warning (multilined)
+  CURRENT_TF_VER=${CURRENT_TF##*v}
+  echo "${CURRENT_TF_VER}"
+}
+
+function check_terragrunt_version() {
+  CURRENT_TERRAGRUNT_VER=$(terragrunt --version | cut -d v -f 3)
+  echo "${CURRENT_TERRAGRUNT_VER}"
+}
+
+function check_kops_version() {
+  CURRENT_KOPS_VER=$(kops version |grep Version|cut -d " " -f 2)
+  echo "${CURRENT_KOPS_VER}"
+}
+
+function check_packer_version() {
+  CURRENT_PACKER_VER=$(packer --version)
+  echo "${CURRENT_PACKER_VER}"
+}
+
+function check_kubectl_version() {
+  CURRENT_KUBECTL_VER=$(kubectl version &> /tmp/kubever ; grep Client /tmp/kubever | awk '{print $5}' | cut -d "\"" -f 2 | cut -c 2- ; rm -f /tmp/kubever)
+  echo "${CURRENT_KUBECTL_VER}"
+}
+
+function terraform_installer() {
+  wget -q https://releases.hashicorp.com/terraform/$1/terraform_$1_linux_amd64.zip -O /tmp/temp.zip && unzip -qq -o /tmp/temp.zip -d /tmp && sudo mv /tmp/terraform /usr/local/bin/ && rm -f /tmp/temp.zip
+  return $?
+}
+
+function terragrunt_installer() {
+  wget -q https://github.com/gruntwork-io/terragrunt/releases/download/v$1/terragrunt_linux_amd64 -O /tmp/terragrunt && chmod +x /tmp/terragrunt && sudo mv /tmp/terragrunt /usr/local/bin/
+  return $?
+}
+
+function kops_installer() {
+  wget -q https://github.com/kubernetes/kops/releases/download/$1/kops-linux-amd64 -O /tmp/kops && chmod +x /tmp/kops && sudo mv /tmp/kops /usr/local/bin/
+  return $?
+}
+
+function packer_installer() {
+  wget -q https://releases.hashicorp.com/packer/$1/packer_$1_linux_amd64.zip -O /tmp/temp.zip && unzip -qq -o /tmp/temp.zip -d /tmp && sudo mv /tmp/packer /usr/local/bin/ && rm -f /tmp/temp.zip
+  return $?
+}
+
+function kubectl_installer() {
+  wget -q https://storage.googleapis.com/kubernetes-release/release/v$1/bin/linux/amd64/kubectl -O /tmp/kubectl && chmod +x /tmp/kubectl && sudo mv /tmp/kubectl /usr/local/bin/
+  return $?
+}
+
+function tool_installer() {
+#
+# $1 = version
+# $2 = checker function
+# $3 = installer function
+# $4 = name
+
+INSTALL=false
+
+printf "Installing $4... "
+
+if [ $1 ]
+then # tool version is set
+
+  TOOL_PATH=$(which $4)
+
+  if [ -x "$TOOL_PATH" ] ; then     
+    CURRENT_TOOL_VER=$($2) 
+    
+    if [ $CURRENT_TOOL_VER != $1 ] ; then 
+      printf "Versions do not match. Installing v$1... "
+      INSTALL=true
+    else 
+      printf "$4 v$1 already installed. Installation skipped.\n"
+    fi
+  else 
+    INSTALL=true
+  fi
+
+  if [ ${INSTALL} = "true" ] ; then
+    $3 $1
+    if [ $? -gt 0  ] ; then
+      printf "Failed!\n"
+    else
+      printf "Done.\n"
+    fi
+  fi
+else
+  printf "No $4 version set. Installation skipped.\n"
+fi
+}
+
+
+prepare_tools
+if [ $? -eq 0 ] ; then
+
+  tool_installer ${TERRAFORM_VERSION} check_terraform_version terraform_installer terraform
+  tool_installer ${TERRAGRUNT_VERSION} check_terragrunt_version terragrunt_installer terragrunt
+  tool_installer ${KOPS_VERSION} check_kops_version kops_installer kops
+  tool_installer ${PACKER_VERSION} check_packer_version packer_installer packer
+  tool_installer ${KUBECTL_VERSION} check_kubectl_version kubectl_installer kubectl
+
+fi
+echo "Thank you for your cooperation."
+
+
+
+
