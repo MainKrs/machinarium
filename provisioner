@@ -1,0 +1,66 @@
+#!/bin/bash
+
+function vs_microsoft_repo_update() {
+  curl -s https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+  sudo install -o root -g root -m 644 microsoft.gpg /etc/apt/trusted.gpg.d/
+  sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
+  sudo apt-get -qq update
+  return $?
+}
+
+function keepassxc_repo_update() {
+  sudo add-apt-repository ppa:phoerious/keepassxc && sudo apt-get update
+  return $?
+}
+
+function vs_install_app() {
+    # sudo apt-get -qq update && sudo apt-get install -qq unzip wget
+  sudo apt-get install -y -qq apt-transport-https && sudo apt-get -qq update && sudo apt-get install -y -qq code 
+  return $?
+}
+function keepassxc_install_app() {
+    # sudo apt-get -qq update && sudo apt-get install -qq unzip wget
+  sudo apt-get install -y -qq keepassxc 
+  return $?
+}
+function install_tslint() {
+  wget -q https://github.com/wata727/tflint/releases/download/v0.7.3/tflint_linux_amd64.zip && unzip tflint_linux_amd64.zip && sudo mv tflint /usr/local/bin/
+  rm tflint_linux_amd64.zip 
+  printf "Done! \n " ; return 0
+}
+
+function install_vscode() {
+  vs_microsoft_repo_update
+  if [ $? -gt 0  ] ; then
+      printf "Repo installation failed. Do you have Internet?\n"
+      return 1
+    else
+    printf "Installing code... " ; vs_install_app
+    if [[ $? -gt 0  ]]  ; then
+        printf "Failed! \n" ; return 1
+      else
+      printf "Done! \n " ; return 0
+    fi  
+  fi
+}
+
+function install_keepassxc() {
+  keepassxc_repo_update
+  if [ $? -gt 0  ] ; then
+      printf "Repo installation failed. Do you have Internet?\n"
+      return 1
+    else
+    printf "Installing KeepassXC... " ; keepassxc_install_app
+    if [[ $? -gt 0  ]]  ; then
+        printf "Failed! \n" ; return 1
+      else
+      printf "Done! \n " ; return 0
+    fi  
+  fi
+}
+
+printf "Provisioner is installing necessary tools: \n"
+printf " * VSCode - " ; install_vscode
+printf " * KeepassXC - " ; install_keepassxc
+printf " * TSLint - " ; install_tslint
+
