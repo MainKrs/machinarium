@@ -135,6 +135,7 @@ if [ $? -eq 0 ] ; then
   tool_installer ${KOPS_VERSION} check_kops_version kops_installer kops
   tool_installer ${PACKER_VERSION} check_packer_version packer_installer packer
   tool_installer ${KUBECTL_VERSION} check_kubectl_version kubectl_installer kubectl
+  tool_installer ${HELM_VERSION} check_helm_version helm_installer helm
 
 fi
 echo "Thank you for your cooperation."
