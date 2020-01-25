@@ -1,38 +1,42 @@
 #!/bin/bash
 
-function vs_microsoft_repo_update() {
+function vs_microsoft_repo_update() { #defining the function by giving it a name and start function's body
   curl -s https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg 
   #download the security key to the system, sign a message, encryption, convert from .asc to .gpg (?)
   sudo install -o root -g root -m 644 microsoft.gpg /etc/apt/trusted.gpg.d/
   #instalacja microsoft.gpg w /etc/apt/trusted.gpg.d/, nadanie root i uprawnien 644 
   sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
- sudo apt-get -qq update
-  return $?
+  #run script, transfer file viewed by this script, to this loacation and if not exist yet, create it
+ sudo apt-get -qq update #update package list without displaying the process
+  return $? #terminate the function
 }
 
-function keepassxc_repo_update() {
-  sudo add-apt-repository ppa:phoerious/keepassxc && sudo apt-get update
-  return $?
+function keepassxc_repo_update() { #defining the function by giving it a name and start function's body
+  sudo add-apt-repository ppa:phoerious/keepassxc && sudo apt-get update 
+  #add launchpad PPA to the system and (if will done success), update package list
+  return $? #terminate the function
 }
-
-function vs_install_app() {
-    # sudo apt-get -qq update && sudo apt-get install -qq unzip wget
-  sudo apt-get install -y -qq apt-transport-https && sudo apt-get -qq update && sudo apt-get install -y -qq code 
-  return $?
+-ls #show list of users in this directory
+  sudo apt-get install -y -qq apt-transport-https && sudo apt-get -qq update && sudo apt-get install -y -qq code
+ #installation of packages (with "yes" and without show of process info) of transport-https, next update package list without 
+ #displaying the process and installation of packages code (VSC)
+  return $? #terminate the function
 }
 function keepassxc_install_app() {
-    # sudo apt-get -qq update && sudo apt-get install -qq unzip wget
-  sudo apt-get install -y -qq keepassxc 
-  return $?
+    # sudo apt-get -qq update && sudo apt-get install -qq unzip wget #package update without of showing process and install of packages unzip and wget without showing of process
+  sudo apt-get install -y -qq keepassxc #install of package keepassxc with "yes" and without showing the process 
+  return $? #terminate the function
 }
 function install_tslint() {
   wget -q https://github.com/wata727/tflint/releases/download/v0.7.3/tflint_linux_amd64.zip && unzip tflint_linux_amd64.zip && sudo mv tflint /usr/local/bin/
-  rm tflint_linux_amd64.zip 
-  printf "Done! \n " ; return 0
+  #to download file without showing the process, unzipped and move to the directory tflint /usr/local/bin/
+  
+  rm tflint_linux_amd64.zip #remove tflint_linux_amd64.zip
+  printf "Done! \n " ; return 0 #show Done!, dont back the error 
 }
 
 function install_vscode() {
-  vs_microsoft_repo_update
+  vs_microsoft_repo_update 
   if [ $? -gt 0  ] ; then
       printf "Repo installation failed. Do you have Internet?\n"
       return 1
